@@ -1,6 +1,7 @@
 package com.github.nicksetzer.metallurgy.orm;
 
 import android.database.Cursor;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -41,26 +42,36 @@ public class EntityTable {
         m_db.execute(statement);
     }
 
-    public void upsert(INaturalPrimaryKey npk, JSONObject item) {
+    public boolean upsert(INaturalPrimaryKey npk, JSONObject item) {
         Statement statement = StatementBuilder.prepareUpsertSelect(m_schema, npk);
         Cursor cursor = m_db.query(statement);
-
+        int effected = 0;
         if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                int index = cursor.getColumnIndex(StatementBuilder.SURROGATE_PRIMARY_KEY);
-                long spk = cursor.getLong(index);
+            try {
+                if (cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex(StatementBuilder.SURROGATE_PRIMARY_KEY);
+                    long spk = cursor.getLong(index);
+                    cursor.close();
+                    statement = StatementBuilder.prepareUpdate(m_schema, spk, item);
+                    Cursor c = m_db.query(statement);
+                    effected = c.getCount();
+                    c.close();
+                } else {
+                    // query returned an empty set
+                    cursor.close();
+                    statement = StatementBuilder.prepareInsert(m_schema, item);
+                    Cursor c = m_db.query(statement);
+                    effected = c.getCount();
+                    c.close();
+                }
+            } finally {
                 cursor.close();
-                statement = StatementBuilder.prepareUpdate(m_schema, spk, item);
-                m_db.execute(statement);
-            } else {
-                // query returned an empty set
-                cursor.close();
-                statement = StatementBuilder.prepareInsert(m_schema, item);
-                m_db.execute(statement);
             }
         }
 
-        return;
+
+
+        return effected==1;
     }
 
     public void updateSet(Long[] spks, String columnName, Object columnValue) {
@@ -70,7 +81,7 @@ public class EntityTable {
 
     public void delete(long spk) {
         Statement statement = StatementBuilder.prepareDelete(m_schema, spk);
-        m_db.execute(statement);
+         m_db.execute(statement);
     }
 
     public void deleteBulk(long[] spks) {
@@ -95,10 +106,13 @@ public class EntityTable {
         Cursor cursor = m_db.query("SELECT COUNT(*) FROM " + m_schema.name, null);
         long count = 0;
         if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                count = cursor.getLong(0);
+            try {
+                if (cursor.moveToFirst()) {
+                    count = cursor.getLong(0);
+                }
+            } finally {
+                cursor.close();
             }
-            cursor.close();
         }
 
         return count;

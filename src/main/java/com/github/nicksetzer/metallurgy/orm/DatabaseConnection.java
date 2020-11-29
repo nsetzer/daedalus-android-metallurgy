@@ -2,6 +2,7 @@ package com.github.nicksetzer.metallurgy.orm;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import java.util.ArrayList;
 
@@ -75,11 +76,19 @@ public class DatabaseConnection {
     private void listTables() {
         Cursor c = m_db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
 
-        if (c.moveToFirst()) {
-            while ( !c.isAfterLast() ) {
-                android.util.Log.e( "daedalus-js", "EntityTable Name: "+c.getString(0));
-                c.moveToNext();
+        if (c != null) {
+            try {
+                if (c.moveToFirst()) {
+                    while (!c.isAfterLast()) {
+                        android.util.Log.e("daedalus-js", "EntityTable Name: " + c.getString(0));
+                        c.moveToNext();
+                    }
+                }
+            } finally {
+                c.close();
             }
+        } else {
+            Log.e("daedalus-js", "null cursor in listTables");
         }
     }
 
@@ -96,7 +105,7 @@ public class DatabaseConnection {
      * @param args
      */
     public void execute(String sql, String[] args) {
-        android.util.Log.d("daedalus-js", "execute: " + sql);
+        //android.util.Log.d("daedalus-js", "execute: " + sql);
         m_db.execSQL(sql, args);
     }
 
@@ -106,7 +115,7 @@ public class DatabaseConnection {
      * @param statement a statement to execute
      */
     public void execute(Statement statement) {
-        android.util.Log.d("daedalus-js", "execute: " + statement.text);
+        //android.util.Log.d("daedalus-js", "execute: " + statement.text);
         m_db.execSQL(statement.text, statement.params.toArray(new String[]{}));
     }
 
@@ -131,7 +140,7 @@ public class DatabaseConnection {
      * @return
      */
     public Cursor query(String sql, String[] args) {
-        android.util.Log.d("daedalus-js", "query: " + sql);
+        //android.util.Log.d("daedalus-js", "query: " + sql);
         return m_db.rawQuery(sql, args);
     }
 
@@ -142,7 +151,7 @@ public class DatabaseConnection {
      * @return
      */
     public Cursor query(Statement statement) {
-        android.util.Log.d("daedalus-js", "query: " + statement.text);
+        //android.util.Log.d("daedalus-js", "query: " + statement.text);
         ArrayList<String> params = new ArrayList<>();
         for (Object obj : statement.params) {
             params.add(obj.toString());
@@ -157,7 +166,7 @@ public class DatabaseConnection {
      */
     public void beginTransaction() {
         m_db.beginTransaction();
-        android.util.Log.e("daedalus-js", "transaction opened. exclusive: true");
+        //android.util.Log.e("daedalus-js", "transaction opened. exclusive: true");
     }
 
     /**
@@ -172,7 +181,7 @@ public class DatabaseConnection {
         } else {
             m_db.beginTransactionNonExclusive();
         }
-        android.util.Log.d("daedalus-js", "transaction opened. exclusive: " + exclusive);
+        //android.util.Log.d("daedalus-js", "transaction opened. exclusive: " + exclusive);
     }
 
     /**
@@ -185,7 +194,7 @@ public class DatabaseConnection {
             m_db.setTransactionSuccessful();
         }
         m_db.endTransaction();
-        android.util.Log.d("daedalus-js", "transaction closed. success: " + success);
+        //android.util.Log.d("daedalus-js", "transaction closed. success: " + success);
     }
 
 }
