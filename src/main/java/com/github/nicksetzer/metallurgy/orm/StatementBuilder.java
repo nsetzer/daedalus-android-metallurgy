@@ -387,6 +387,26 @@ public class StatementBuilder {
         return new Statement(builder.toString(), params);
     }
 
+    public static Statement prepareFind(TableSchema table, long spk) {
+        ParamList params = new ParamList();
+        StringBuilder builder = new StringBuilder();
+        builder.append("SELECT ");
+        for (int i=0; i < table.columns.size(); i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            builder.append(table.columns.get(i).name);
+        }
+        builder.append(" FROM ");
+        builder.append(table.name);
+        builder.append(" WHERE (");
+        builder.append(SURROGATE_PRIMARY_KEY);
+        builder.append(" == ");
+        builder.append(spk);
+        builder.append(")");
+        return new Statement(builder.toString(), params);
+    }
+
     public static Statement prepareSelect(TableSchema table, String[] columns, INaturalPrimaryKey npk, long limit, long offset) {
 
         ParamList params = new ParamList();
@@ -426,6 +446,7 @@ public class StatementBuilder {
 
         return new Statement(builder.toString(), params);
     }
+
     public static Statement prepareExists(TableSchema table, String columnName, Object columnValue) {
         ParamList params = new ParamList();
         StringBuilder builder = new StringBuilder();

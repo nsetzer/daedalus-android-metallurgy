@@ -89,6 +89,11 @@ public class EntityTable {
         m_db.execute(statement);
     }
 
+    public Cursor find(long spk) {
+        Statement statement = StatementBuilder.prepareFind(m_schema, spk);
+        return m_db.query(statement);
+    }
+
     public Cursor select(INaturalPrimaryKey npk, long limit, long offset) {
         Statement statement = StatementBuilder.prepareSelect(m_schema, npk, limit, offset);
         return m_db.query(statement);
@@ -146,6 +151,15 @@ public class EntityTable {
         }
 
         return obj;
+    }
+
+    public JSONObject getFirstObject(Cursor cursor) throws JSONException {
+        if (cursor != null && cursor.moveToFirst()) {
+            if (!cursor.isAfterLast()) {
+                return getObject(cursor);
+            }
+        }
+        return null;
     }
 
 }
