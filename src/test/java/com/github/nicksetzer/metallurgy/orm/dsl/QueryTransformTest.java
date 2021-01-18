@@ -3,15 +3,14 @@ package com.github.nicksetzer.metallurgy.orm.dsl;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class SqlTransformTest {
+public class QueryTransformTest {
 
 
-    private static class TestSqlTransform extends SqlTransform {
+    private static class TestQueryTransform extends QueryTransform {
 
-        TestSqlTransform() {
+        TestQueryTransform() {
             addColumnDef("rating", new String[]{"rating", "rte"}, SqlType.NUMBER);
             addColumnDef("date", new String[]{"date"}, SqlType.EPOCHTIME);
 
@@ -21,19 +20,19 @@ public class SqlTransformTest {
         }
 
         static Pair<String, List<String>> do_transform(Token mod) throws TransformError {
-            TestSqlTransform xform = new TestSqlTransform();
+            TestQueryTransform xform = new TestQueryTransform();
             return xform.transform(mod);
         }
     }
 
     @Test
-    public void test_all_text_1() throws ParserBase.ParseError, SqlTransform.TransformError {
+    public void test_all_text_1() throws ParserBase.ParseError, QueryTransform.TransformError {
 
         QueryParser parser = new QueryParser();
         Token mod = parser.parse("stp");
         //System.out.println(mod.toDebugString());
 
-        Pair<String, List<String>> pair = TestSqlTransform.do_transform(mod);
+        Pair<String, List<String>> pair = TestQueryTransform.do_transform(mod);
 
         Assert.assertEquals("((lower(artist) LIKE lower(?) OR lower(albums) LIKE lower(?)))", pair.first);
         Assert.assertEquals(2, pair.second.size());
@@ -42,13 +41,13 @@ public class SqlTransformTest {
     }
 
     @Test
-    public void test_number_1() throws ParserBase.ParseError, SqlTransform.TransformError {
+    public void test_number_1() throws ParserBase.ParseError, QueryTransform.TransformError {
 
         QueryParser parser = new QueryParser();
         Token mod = parser.parse("rte < 0xF");
         //System.out.println(mod.toDebugString());
 
-        Pair<String, List<String>> pair = TestSqlTransform.do_transform(mod);
+        Pair<String, List<String>> pair = TestQueryTransform.do_transform(mod);
 
         Assert.assertEquals("(rating < ?)", pair.first);
         Assert.assertEquals(1, pair.second.size());
@@ -56,13 +55,13 @@ public class SqlTransformTest {
     }
 
     @Test
-    public void test_table_def() throws ParserBase.ParseError, SqlTransform.TransformError {
+    public void test_table_def() throws ParserBase.ParseError, QueryTransform.TransformError {
 
         QueryParser parser = new QueryParser();
         Token mod = parser.parse("user.name == 'bob'");
         //System.out.println(mod.toDebugString());
 
-        Pair<String, List<String>> pair = TestSqlTransform.do_transform(mod);
+        Pair<String, List<String>> pair = TestQueryTransform.do_transform(mod);
 
         Assert.assertEquals("(user.name = ?)", pair.first);
         Assert.assertEquals(1, pair.second.size());
@@ -70,15 +69,15 @@ public class SqlTransformTest {
     }
 
     @Test
-    public void test_keyword() throws ParserBase.ParseError, SqlTransform.TransformError {
+    public void test_keyword() throws ParserBase.ParseError, QueryTransform.TransformError {
 
         QueryParser parser = new QueryParser();
         Token mod_1 = parser.parse("\"ABC\" or \"DEF\"");
         Token mod_2 = parser.parse("\"ABC\" || \"DEF\"");
         //System.out.println(mod.toDebugString());
 
-        Pair<String, List<String>> pair_1 = TestSqlTransform.do_transform(mod_1);
-        Pair<String, List<String>> pair_2 = TestSqlTransform.do_transform(mod_2);
+        Pair<String, List<String>> pair_1 = TestQueryTransform.do_transform(mod_1);
+        Pair<String, List<String>> pair_2 = TestQueryTransform.do_transform(mod_2);
 
         Assert.assertEquals("((lower(artist) LIKE lower(?) OR lower(albums) LIKE lower(?)) OR (lower(artist) LIKE lower(?) OR lower(albums) LIKE lower(?)))", pair_1.first);
         Assert.assertEquals(pair_2.first, pair_1.first);
@@ -90,32 +89,32 @@ public class SqlTransformTest {
     }
 
     @Test
-    public void test_reference() throws ParserBase.ParseError, SqlTransform.TransformError {
+    public void test_reference() throws ParserBase.ParseError, QueryTransform.TransformError {
 
         QueryParser parser = new QueryParser();
         Token mod = parser.parse("rte = &rte");
         System.out.println(mod.toDebugString());
 
-        Pair<String, List<String>> pair = TestSqlTransform.do_transform(mod);
+        Pair<String, List<String>> pair = TestQueryTransform.do_transform(mod);
         System.out.println(pair.first);
 
     }
 
     @Test
-    public void test_epochtime() throws ParserBase.ParseError, SqlTransform.TransformError {
+    public void test_epochtime() throws ParserBase.ParseError, QueryTransform.TransformError {
 
         QueryParser parser = new QueryParser();
         Token mod = parser.parse("date > -5d");
         System.out.println(mod.toDebugString());
 
-        Pair<String, List<String>> pair = TestSqlTransform.do_transform(mod);
+        Pair<String, List<String>> pair = TestQueryTransform.do_transform(mod);
         System.out.println(pair.first);
         System.out.println(pair.second);
 
     }
 
     @Test
-    public void test_all_text_2() throws ParserBase.ParseError, SqlTransform.TransformError {
+    public void test_all_text_2() throws ParserBase.ParseError, QueryTransform.TransformError {
 
         System.out.println(DslException.format(new Token(TokenKind.P_COMPARE, "==", new Position(1,0)), "sample error"));
         QueryParser parser = new QueryParser();
@@ -123,8 +122,8 @@ public class SqlTransformTest {
         Token mod = parser.parse("rating = -+-0b1010");
         System.out.println(mod.toDebugString());
 
-        SqlTransform xform = new SqlTransform();
-        xform.addColumnDef("rating", new String[]{"rte"}, SqlTransform.SqlType.NUMBER);
+        QueryTransform xform = new QueryTransform();
+        xform.addColumnDef("rating", new String[]{"rte"}, QueryTransform.SqlType.NUMBER);
         xform.enableAllText(new String[]{"artist", "albums"});
 
         Pair<String, List<String>> pair = xform.transform(mod);

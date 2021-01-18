@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.ArrayBlockingQueue;
 
-public class SqlTransform {
+public class QueryTransform {
 
     public static class TransformError extends DslException {
 
@@ -96,7 +96,7 @@ public class SqlTransform {
     boolean m_alltext;
     String[] m_alltext_columns;
 
-    public SqlTransform() {
+    public QueryTransform() {
         m_columns = new HashMap<>();
         m_tables = new HashMap<>();
         m_seq = new Stack<>();
