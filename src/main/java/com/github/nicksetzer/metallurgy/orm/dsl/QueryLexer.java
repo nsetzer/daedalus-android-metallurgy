@@ -26,7 +26,15 @@ public class QueryLexer extends LexerBase {
         charset_lowercase = mkSet("abcdefghijklmnopqrstuvwxyz");
         charset_uppercase = mkSet("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
         charset_natural = mkSet("0123456789");
-        charset_number = mkSet("0123456789nxob_.jtgmkABCDEFabcdef");
+        // numbers can have suffix:
+        //  s,h,d,w,m,y : seconds, hours, days, weeks, months, years
+        //  j : imaginary
+        // numbers can have prefix:
+        //  0x 0o 0n 0b
+        // numbers can be separated using _
+        // numbers can be hex, oct, nibble, or binary
+        //
+        charset_number = mkSet("0123456789nxob_.jtgshwmykABCDEFabcdef");
         charset_string = mkSet("\"'`");
         charset_symbol1 = mkSet("{}[](),~;:#?"); // symbols that never combine
         charset_symbol2 = mkSet("+-*/&|^=<>%!@."); // symbols that may combine
@@ -37,7 +45,7 @@ public class QueryLexer extends LexerBase {
                 "#"});
 
         strset_operator2 = mkSet(new String[]{
-                "<=", ">=", "==", "!=", "!=="});
+                "<=", ">=", "==", "!=", "!==", "||", "&&"});
     }
 
     private Set<Integer> mkSet(String str) {

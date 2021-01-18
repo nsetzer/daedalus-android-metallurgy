@@ -13,6 +13,8 @@ public class SqlTransformTest {
 
         TestSqlTransform() {
             addColumnDef("rating", new String[]{"rating", "rte"}, SqlType.NUMBER);
+            addColumnDef("date", new String[]{"date"}, SqlType.EPOCHTIME);
+
             TableDef tbl = addTableDef("user", new String[]{"user"});
             tbl.addColumnDef("user.name", new String[]{"name"}, SqlType.STRING);
             enableAllText(new String[]{"artist", "albums"});
@@ -65,6 +67,51 @@ public class SqlTransformTest {
         Assert.assertEquals("(user.name = ?)", pair.first);
         Assert.assertEquals(1, pair.second.size());
         Assert.assertEquals("bob", pair.second.get(0));
+    }
+
+    @Test
+    public void test_keyword() throws ParserBase.ParseError, SqlTransform.TransformError {
+
+        QueryParser parser = new QueryParser();
+        Token mod_1 = parser.parse("\"ABC\" or \"DEF\"");
+        Token mod_2 = parser.parse("\"ABC\" || \"DEF\"");
+        //System.out.println(mod.toDebugString());
+
+        Pair<String, List<String>> pair_1 = TestSqlTransform.do_transform(mod_1);
+        Pair<String, List<String>> pair_2 = TestSqlTransform.do_transform(mod_2);
+
+        Assert.assertEquals("((lower(artist) LIKE lower(?) OR lower(albums) LIKE lower(?)) OR (lower(artist) LIKE lower(?) OR lower(albums) LIKE lower(?)))", pair_1.first);
+        Assert.assertEquals(pair_2.first, pair_1.first);
+        Assert.assertEquals(4, pair_1.second.size());
+        Assert.assertEquals("%ABC%", pair_1.second.get(0));
+        Assert.assertEquals("%ABC%", pair_1.second.get(1));
+        Assert.assertEquals("%DEF%", pair_1.second.get(2));
+        Assert.assertEquals("%DEF%", pair_1.second.get(3));
+    }
+
+    @Test
+    public void test_reference() throws ParserBase.ParseError, SqlTransform.TransformError {
+
+        QueryParser parser = new QueryParser();
+        Token mod = parser.parse("rte = &rte");
+        System.out.println(mod.toDebugString());
+
+        Pair<String, List<String>> pair = TestSqlTransform.do_transform(mod);
+        System.out.println(pair.first);
+
+    }
+
+    @Test
+    public void test_epochtime() throws ParserBase.ParseError, SqlTransform.TransformError {
+
+        QueryParser parser = new QueryParser();
+        Token mod = parser.parse("date > -5d");
+        System.out.println(mod.toDebugString());
+
+        Pair<String, List<String>> pair = TestSqlTransform.do_transform(mod);
+        System.out.println(pair.first);
+        System.out.println(pair.second);
+
     }
 
     @Test

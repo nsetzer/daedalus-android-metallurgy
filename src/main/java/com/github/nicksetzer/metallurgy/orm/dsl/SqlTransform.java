@@ -199,17 +199,33 @@ public class SqlTransform {
 
             ColumnDef def = parse_identifier(lhs);
 
-            switch (def.m_type) {
-                case NUMBER:
-                    SqlFormat.format_number(m_out, m_params, token.value(), def.m_column, parse_integer(rhs));
-                    break;
-                case STRING:
-                    SqlFormat.format_string(m_out, m_params, token.value(), def.m_column, parse_string(rhs));
-                    break;
-                case EPOCHTIME:
-                case DURATION:
-                default:
-                    throw new TransformError(lhs, "unhandled type: " + def.m_type.name());
+            if (rhs.kind() == TokenKind.P_REFERNCE) {
+                ColumnDef ref = parse_identifier(rhs.children().get(0));
+                // TODO: this should have a LHS column-type dependant construction
+                m_out.append(def.m_column);
+                m_out.append(" ");
+                m_out.append(token.value());
+                m_out.append(" ");
+                m_out.append(ref.m_column);
+            } else {
+
+                switch (def.m_type) {
+                    case NUMBER:
+                        SqlFormat.format_number(m_out, m_params, token.value(), def.m_column, parse_integer(rhs));
+                        break;
+                    case STRING:
+                        SqlFormat.format_string(m_out, m_params, token.value(), def.m_column, parse_string(rhs));
+                        break;
+                    case EPOCHTIME:
+                        long epoch_time = System.currentTimeMillis()/1000;
+                        epoch_time += _parse_integer(rhs);
+                        SqlFormat.format_number(m_out, m_params, token.value(), def.m_column, Long.toString(epoch_time));
+                        break;
+                    case DURATION:
+                    default:
+                        throw new TransformError(lhs, "unhandled type: " + def.m_type.name());
+                }
+
             }
 
         }
@@ -337,6 +353,34 @@ public class SqlTransform {
 
         int ivalue;
 
+        int multiplier = 1;
+        if (value.endsWith("s")) {
+            multiplier = 1;
+            value = value.substring(0, value.length() - 1);
+        } else if (value.endsWith("m")) {
+            multiplier = 60;
+            value = value.substring(0, value.length() - 1);
+        } else if (value.endsWith("h")) {
+            multiplier = 60*60;
+            value = value.substring(0, value.length() - 1);
+        } else if (value.endsWith("d")) {
+            // TODO: should be now.day +/- 1...
+            multiplier = 60*60*24;
+            value = value.substring(0, value.length() - 1);
+        } else if (value.endsWith("w")) {
+            // TODO: should be now.day +/- 7...
+            multiplier = 60*60*24*7;
+            value = value.substring(0, value.length() - 1);
+        } else if (value.endsWith("m")) {
+            // TODO: should be now.month +/- 1...
+            multiplier = 60*60*24*28;
+            value = value.substring(0, value.length() - 1);
+        } else if (value.endsWith("y")) {
+            // TODO: should be now.year +/- 1...
+            multiplier = 60*60*24*52;
+            value = value.substring(0, value.length() - 1);
+        }
+
         if (value.startsWith("0x")) {
             ivalue = Integer.parseInt(value.substring(2), 16);
         } else if (value.startsWith("0o")) {
@@ -352,6 +396,8 @@ public class SqlTransform {
         if (negate) {
             ivalue *= -1;
         }
+
+        ivalue *= multiplier;
 
         return ivalue;
     }

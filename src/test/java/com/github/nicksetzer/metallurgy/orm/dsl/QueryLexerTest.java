@@ -49,4 +49,18 @@ public class QueryLexerTest {
             System.out.println(tokens.get(i).toString());
         }
     }
+
+    @Test
+    public void test_datetime() {
+
+        LexerBase.Iterator iter = new LexerBase.StringIterator("date > -5d");
+        QueryLexer lexer = new QueryLexer(iter);
+
+        ArrayList<Token> tokens = lexer.lex();
+
+        System.out.println("token count: " + tokens.size());
+        for (int i=0; i < tokens.size(); i++) {
+            System.out.println(tokens.get(i).toString());
+        }
+    }
 }

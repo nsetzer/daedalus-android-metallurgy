@@ -139,6 +139,67 @@ public class QueryParser extends ParserBase {
         }
     }
 
+    public class KeywordParserRule extends ParserBase.ParserRuleBase {
+
+        public KeywordParserRule() {
+            super(L2R);
+        }
+
+        public int execute(Token token, int child_index) throws ParserBase.ParseError {
+            Token child = token.children().get(child_index);
+
+            if (child.kind()==TokenKind.L_IDENTIFIER) {
+
+                if (child.value().equals("not")) {
+                    child.m_kind = TokenKind.L_SYMBOL;
+                    child.m_value = "!";
+                }
+
+                if (child.value().equals("and")) {
+                    child.m_kind = TokenKind.L_SYMBOL;
+                    child.m_value = "&&";
+                }
+
+                if (child.value().equals("or")) {
+                    child.m_kind = TokenKind.L_SYMBOL;
+                    child.m_value = "||";
+                }
+
+                if (child.value().equals("eq")) {
+                    child.m_kind = TokenKind.L_SYMBOL;
+                    child.m_value = "=";
+                }
+
+                if (child.value().equals("ne")) {
+                    child.m_kind = TokenKind.L_SYMBOL;
+                    child.m_value = "!=";
+                }
+
+                if (child.value().equals("lt")) {
+                    child.m_kind = TokenKind.L_SYMBOL;
+                    child.m_value = "<";
+                }
+
+                if (child.value().equals("gt")) {
+                    child.m_kind = TokenKind.L_SYMBOL;
+                    child.m_value = ">";
+                }
+
+                if (child.value().equals("le")) {
+                    child.m_kind = TokenKind.L_SYMBOL;
+                    child.m_value = "<=";
+                }
+
+                if (child.value().equals("ge")) {
+                    child.m_kind = TokenKind.L_SYMBOL;
+                    child.m_value = ">=";
+                }
+            }
+
+            return 1;
+        }
+    }
+
     public class AllTextParserRule extends ParserBase.ParserRuleBase {
 
         public AllTextParserRule() {
@@ -201,10 +262,12 @@ public class QueryParser extends ParserBase {
         // only allow grouping using parentheticals
         m_group_pairs.put("(", ")");
 
+        addRule(new KeywordParserRule()); // detect keywords
         addRule(new BinaryParserRule(L2R, newStrSet(new String[]{"."}))); // for attribute access
         addRule(new BinaryParserRule(L2R, newStrSet(new String[]{"/"}))); // for dates
         addRule(new BinaryParserRule(L2R, newStrSet(new String[]{":"}))); // for time
         addRule(new UnaryPrefixParserRule(R2L, newStrSet(new String[]{"+", "-"}))); // for numbers
+        addRule(new UnaryPrefixParserRule(R2L, TokenKind.P_REFERNCE, newStrSet(new String[]{"&"})));
         addRule(new BinaryParserRule(L2R, TokenKind.P_COMPARE, newStrSet(new String[]{"=", "==", "<", "<=", ">=", ">"})));
         addRule(new AllTextParserRule());
 

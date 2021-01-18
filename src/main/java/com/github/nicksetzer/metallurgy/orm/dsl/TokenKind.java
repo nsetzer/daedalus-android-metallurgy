@@ -13,6 +13,7 @@ public enum TokenKind {
     P_UNARY,
     P_BINARY,
     P_COMPARE,
+    P_REFERNCE,
     P_LOGICAL_NOT,
     P_LOGICAL_AND,
     P_LOGICAL_OR,
