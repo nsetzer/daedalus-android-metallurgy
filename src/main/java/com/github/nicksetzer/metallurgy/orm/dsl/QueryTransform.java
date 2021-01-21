@@ -354,6 +354,10 @@ public class QueryTransform {
         int ivalue;
 
         int multiplier = 1;
+        /*if (value.endsWith("ms")) {
+            multiplier = 1;
+            value = value.substring(0, value.length() - 2);
+        } else */
         if (value.endsWith("s")) {
             multiplier = 1;
             value = value.substring(0, value.length() - 1);
@@ -371,7 +375,7 @@ public class QueryTransform {
             // TODO: should be now.day +/- 7...
             multiplier = 60*60*24*7;
             value = value.substring(0, value.length() - 1);
-        } else if (value.endsWith("m")) {
+        } else if (value.endsWith("M")) {
             // TODO: should be now.month +/- 1...
             multiplier = 60*60*24*28;
             value = value.substring(0, value.length() - 1);

@@ -34,10 +34,10 @@ public class QueryLexer extends LexerBase {
         // numbers can be separated using _
         // numbers can be hex, oct, nibble, or binary
         //
-        charset_number = mkSet("0123456789nxob_.jtgshwmykABCDEFabcdef");
+        charset_number = mkSet("0123456789nxob_.:jtgshwmykABCDEFabcdef");
         charset_string = mkSet("\"'`");
-        charset_symbol1 = mkSet("{}[](),~;:#?"); // symbols that never combine
-        charset_symbol2 = mkSet("+-*/&|^=<>%!@."); // symbols that may combine
+        charset_symbol1 = mkSet("{}!"); // symbols that never combine
+        charset_symbol2 = mkSet("+-*/&|^=<>%."); // symbols that may combine
 
         strset_operator1 = mkSet(new String[]{
                 "+", "-", "~", "*", "/", "%", "@", "&", "^", "|", "!",
@@ -119,6 +119,10 @@ public class QueryLexer extends LexerBase {
             if (!charset_number.contains(codepoint)) {
                 break;
             }
+            // TODO: timedelta
+            //if (codepoint == ':') {
+            //    m_current_kind = TokenKind.L_TIMEDELTA;
+            //}
             putch(m_iter.getch());
         }
 
