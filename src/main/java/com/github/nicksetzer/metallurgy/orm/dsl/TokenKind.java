@@ -7,7 +7,8 @@ public enum TokenKind {
     L_STRING,
     L_NUMBER,
     L_SYMBOL,
-    L_TIMEDELTA,
+    L_DATE_DELTA,
+    L_DURATION,
 
     P_MODULE,
     P_GROUPING,

@@ -71,7 +71,6 @@ public class LexerBase {
         m_tokens = new ArrayList<>();
     }
 
-    // TODO: template over Token, TokenKind
     public LexerBase(Iterator iter, TokenKind default_kind) {
         m_iter = iter;
         m_default_kind = default_kind;
@@ -92,9 +91,7 @@ public class LexerBase {
         Token token = new Token(m_current_kind, m_current_token.toString(), m_initial_position);
         m_tokens.add(token);
 
-        m_current_kind = m_default_kind;
-        m_initial_position = null;
-        m_current_token.setLength(0); // clear
+        reset();
     }
 
     public void maybe_push() {
@@ -114,12 +111,12 @@ public class LexerBase {
         Token token = new Token(m_current_kind, m_current_token.toString(), m_initial_position);
         m_tokens.add(token);
 
-        m_current_kind = m_default_kind;
-        m_initial_position = null;
-        m_current_token.setLength(0); // clear
+        reset();
     }
 
     public void reset() {
+        m_current_kind = m_default_kind;
+        m_initial_position = null;
         m_current_token.setLength(0);
     }
 
@@ -127,6 +124,7 @@ public class LexerBase {
         if (this.m_tokens.size() > 0) {
             return m_tokens.get(m_tokens.size()-1);
         }
+        // return an empty token to avoid null checking
         return new Token();
     }
 

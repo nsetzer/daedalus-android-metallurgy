@@ -17,27 +17,26 @@ public class QueryLexer extends LexerBase {
 
     Set<String> strset_operator1;
     Set<String> strset_operator2;
-    Set<String> strset_operator3;
 
     public QueryLexer(LexerBase.Iterator iter) {
         super(iter);
 
-        charset_natural = mkSet("0123456789");
         charset_lowercase = mkSet("abcdefghijklmnopqrstuvwxyz");
         charset_uppercase = mkSet("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
         charset_natural = mkSet("0123456789");
         // numbers can have suffix:
-        //  s,h,d,w,m,y : seconds, hours, days, weeks, months, years
+        //  d,w,m,y : days, weeks, months, years
         //  j : imaginary
         // numbers can have prefix:
         //  0x 0o 0n 0b
         // numbers can be separated using _
         // numbers can be hex, oct, nibble, or binary
+        // numbers can use : to denote duration HH:MM:SS.RRR or MM:SS.RRR
         //
         charset_number = mkSet("0123456789nxob_.:jtgshwmykABCDEFabcdef");
         charset_string = mkSet("\"'`");
-        charset_symbol1 = mkSet("{}!"); // symbols that never combine
-        charset_symbol2 = mkSet("+-*/&|^=<>%."); // symbols that may combine
+        charset_symbol1 = mkSet("()"); // symbols that never combine
+        charset_symbol2 = mkSet("+-*/&|^=<>%.!"); // symbols that may combine
 
         strset_operator1 = mkSet(new String[]{
                 "+", "-", "~", "*", "/", "%", "@", "&", "^", "|", "!",
@@ -59,13 +58,14 @@ public class QueryLexer extends LexerBase {
     }
 
     private Set<String> mkSet(String[] strs) {
-        Set<String> set = new HashSet<String>();
+        Set<String> set = new HashSet<>();
         int len = strs.length;
         for (int i=0; i < len; i++) {
             set.add(strs[i]);
         }
         return set;
     }
+
     public ArrayList<Token> lex() {
 
         m_tokens = new ArrayList<>();
@@ -81,7 +81,7 @@ public class QueryLexer extends LexerBase {
             int rv = 0;
             if (codepoint == '\n') {
                 m_iter.getch();
-                push_endl();
+                //push_endl();
             } else if (charset_symbol1.contains(codepoint)) {
                 rv = lex_symbol();
             } else if (charset_symbol2.contains(codepoint)) {
@@ -114,16 +114,30 @@ public class QueryLexer extends LexerBase {
         maybe_push();
         m_current_kind = TokenKind.L_NUMBER;
 
+        int last = 0;
         while (true) {
             int codepoint = m_iter.peek();
             if (!charset_number.contains(codepoint)) {
                 break;
             }
-            // TODO: timedelta
-            //if (codepoint == ':') {
-            //    m_current_kind = TokenKind.L_TIMEDELTA;
-            //}
-            putch(m_iter.getch());
+
+            if (codepoint == ':') {
+                m_current_kind = TokenKind.L_DURATION;
+            }
+            last = m_iter.getch();
+            putch(last);
+        }
+
+        // a suffix of y,m,d is a date delta number
+        switch (last) {
+            case 'y':
+            case 'm':
+            case 'w':
+            case 'd':
+                m_current_kind = TokenKind.L_DATE_DELTA;
+                break;
+            default:
+                break;
         }
 
         push();

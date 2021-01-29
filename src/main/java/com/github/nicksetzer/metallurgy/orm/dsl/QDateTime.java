@@ -2,8 +2,6 @@ package com.github.nicksetzer.metallurgy.orm.dsl;
 
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class QDateTime extends QObject {
 
@@ -46,26 +44,45 @@ public class QDateTime extends QObject {
     }
 
     @Override
-    public QObject add(QObject other) {
-        if (other.getClass() == QTimeDelta.class) {
-            QTimeDelta td = (QTimeDelta) other;
-            DateUtil.add_date_delta(this, td.year, td.month, td.day);
-            DateUtil.add_time_delta(this, td.hours, td.minutes, td.seconds, td.milliseconds);
+    public QObject add(QObject other) throws EvalException {
+        if (other.getClass() == QDateDelta.class) {
+            QDateTime dt = copy();
+            QDateDelta td = (QDateDelta) other;
+
+            DateUtil.add_date_delta(dt, td.years, td.months, td.days);
+            DateUtil.add_time_delta(dt, td.hours, td.minutes, td.seconds, td.milliseconds);
+            return dt;
+        } else if (other.getClass() == QDuration.class) {
+            QDateTime dt = copy();
+            QDuration duration = QDuration.class.cast(other);
+            //DateUtil.add_time_delta(dt, duration.hours, duration.minutes, duration.seconds, duration.milliseconds);
+            DateUtil.add_time_delta(dt, duration.milliseconds);
+            return dt;
+        } else {
+            throw EvalException.invalidType(other);
         }
-        return this;
     }
 
     @Override
-    public QObject sub(QObject other) {
-        if (other.getClass() == QTimeDelta.class) {
-            QTimeDelta td = (QTimeDelta) other;
-            DateUtil.add_date_delta(this, -td.year, -td.month, -td.day);
-            DateUtil.add_time_delta(this, -td.hours, -td.minutes, -td.seconds, -td.milliseconds);
+    public QObject sub(QObject other) throws EvalException {
+        if (other.getClass() == QDateDelta.class) {
+            QDateTime dt = copy();
+            QDateDelta td = (QDateDelta) other;
+            DateUtil.add_date_delta(dt, -td.years, -td.months, -td.days);
+            DateUtil.add_time_delta(dt, -td.hours, -td.minutes, -td.seconds, -td.milliseconds);
+            return dt;
+        } else if (other.getClass() == QDuration.class) {
+            QDateTime dt = copy();
+            QDuration duration = QDuration.class.cast(other);
+            //DateUtil.add_time_delta(dt, -duration.hours, -duration.minutes, -duration.seconds, -duration.milliseconds);
+            DateUtil.add_time_delta(dt, -duration.milliseconds);
+            return dt;
+        } else {
+            throw EvalException.invalidType(other);
         }
-        return this;
     }
 
-    private static String parseNumber(LexerBase.StringIterator iter, int terminal1, int terminal2) throws DslException  {
+    private static String parseNumber(LexerBase.StringIterator iter, int terminal1, int terminal2) throws EvalException  {
         StringBuilder sb = new StringBuilder();
 
         while (true) {
@@ -82,14 +99,14 @@ public class QDateTime extends QObject {
                 sb.appendCodePoint(iter.getch());
             } else {
                 sb.appendCodePoint(iter.getch());
-                throw new DslException("QDateUtil: unexpected symbol: " + sb.toString());
+                throw new EvalException("QDateUtil: unexpected symbol: " + sb.toString());
             }
         }
 
         return sb.toString();
     }
 
-    public static QDateTime fromString(String str) throws DslException {
+    public static QDateTime fromString(String str) throws EvalException {
 
         LexerBase.StringIterator iter = new LexerBase.StringIterator(str);
 
@@ -122,7 +139,7 @@ public class QDateTime extends QObject {
                     if (tmp.length()==2 || tmp.length()==4) {
                         year = Integer.parseInt(tmp);
                     } else {
-                        throw new DslException("QDateTime: invalid year");
+                        throw new EvalException("QDateTime: invalid year");
                     }
                     mode += 1;
                     break;
@@ -135,7 +152,7 @@ public class QDateTime extends QObject {
                     if (tmp.length()==1 || tmp.length()==2) {
                         month = Integer.parseInt(tmp);
                     } else {
-                        throw new DslException("QDateTime: invalid month");
+                        throw new EvalException("QDateTime: invalid month");
                     }
                     mode += 1;
                     break;
@@ -148,7 +165,7 @@ public class QDateTime extends QObject {
                     if (tmp.length()==1 || tmp.length()==2) {
                         day = Integer.parseInt(tmp);
                     } else {
-                        throw new DslException("QDateTime: invalid day");
+                        throw new EvalException("QDateTime: invalid day");
                     }
                     mode += 1;
                     break;
@@ -161,7 +178,7 @@ public class QDateTime extends QObject {
                     if (tmp.length()==1 || tmp.length()==2) {
                         hours = Integer.parseInt(tmp);
                     } else {
-                        throw new DslException("QDateTime: invalid hours");
+                        throw new EvalException("QDateTime: invalid hours");
                     }
                     mode += 1;
                     break;
@@ -174,7 +191,7 @@ public class QDateTime extends QObject {
                     if (tmp.length()==1 || tmp.length()==2) {
                         minutes = Integer.parseInt(tmp);
                     } else {
-                        throw new DslException("QDateTime: invalid hours");
+                        throw new EvalException("QDateTime: invalid hours");
                     }
                     mode += 1;
                     break;
@@ -187,7 +204,7 @@ public class QDateTime extends QObject {
                     if (tmp.length()==1 || tmp.length()==2) {
                         seconds = Integer.parseInt(tmp);
                     } else {
-                        throw new DslException("QDateTime: invalid hours");
+                        throw new EvalException("QDateTime: invalid hours");
                     }
                     mode += 1;
                     break;
@@ -200,7 +217,7 @@ public class QDateTime extends QObject {
                     if (tmp.length()>=1 && tmp.length()<=3) {
                         milliseconds = Integer.parseInt(tmp);
                     } else {
-                        throw new DslException("QDateTime: invalid milliseconds");
+                        throw new EvalException("QDateTime: invalid milliseconds");
                     }
                     break;
                 default:
@@ -248,4 +265,13 @@ public class QDateTime extends QObject {
 
         return sb.toString();
     }
+
+    public Long toEpochTime() {
+        return DateUtil.epoch_time(this);
+    }
+
+    public QDateTime copy() {
+        return new QDateTime(year, month, day, hours, minutes, seconds, milliseconds);
+    }
+
 }

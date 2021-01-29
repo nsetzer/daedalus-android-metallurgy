@@ -513,7 +513,7 @@ public class StatementBuilder {
 
     /**
      * Wrap an instance of an object in an interface at run time.
-     * @param obj      the object instance which impliments traits of an interface
+     * @param obj      the object instance which implements traits of an interface
      * @param intface  the interface
      * @param <T>      the class type of interface
      *
@@ -524,12 +524,19 @@ public class StatementBuilder {
      * @return an object implementing the given interface
      */
     public static <T> T getWrapper(final Object obj, final Class<T> intface) {
+        /*
         InvocationHandler invocationHandler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 return obj.getClass().getDeclaredMethod(method.getName(), method.getParameterTypes()).invoke(obj, args);
             }
         };
-        return (T) Proxy.newProxyInstance(obj.getClass().getClassLoader(), new Class[]{intface}, invocationHandler);
+        */
+        InvocationHandler invocationHandler = (Object proxy, Method method, Object[] args) ->
+            obj.getClass().getDeclaredMethod(
+                    method.getName(),
+                    method.getParameterTypes()
+            ).invoke(obj, args);
+        return intface.cast(Proxy.newProxyInstance(obj.getClass().getClassLoader(), new Class[]{intface}, invocationHandler));
     }
 }

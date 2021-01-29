@@ -1,17 +1,12 @@
 package com.github.nicksetzer.metallurgy.orm.dsl;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
-import java.util.concurrent.ArrayBlockingQueue;
 
 public class QueryTransform {
 
@@ -23,9 +18,11 @@ public class QueryTransform {
     }
 
     public enum SqlType {
-        NUMBER,
+        INTEGER,
+        FLOAT,
         STRING,
-        EPOCHTIME,
+        EPOCHTIME_SECONDS,
+        EPOCHTIME_MILLISECONDS,
         DURATION,
     }
 
@@ -95,6 +92,7 @@ public class QueryTransform {
 
     boolean m_alltext;
     String[] m_alltext_columns;
+    QDateTime m_current_time;
 
     public QueryTransform() {
         m_columns = new HashMap<>();
@@ -104,6 +102,7 @@ public class QueryTransform {
         m_params = new ArrayList<>();
         m_alltext = false;
         m_alltext_columns = null;
+        m_current_time = null;
     }
 
     public void enableAllText(String[] columns) {
@@ -121,7 +120,7 @@ public class QueryTransform {
         return def;
     }
 
-    public Pair<String, List<String>> transform(Token token) throws TransformError {
+    public Pair<String, List<String>> transform(Token token) throws DslException {
 
         m_seq.add(token);
 
@@ -175,7 +174,7 @@ public class QueryTransform {
         }
     }
 
-    public void handle_compare(Token token) throws TransformError {
+    public void handle_compare(Token token) throws DslException {
 
         Token lhs = token.children().get(0);
         Token rhs = token.children().get(1);
@@ -209,14 +208,35 @@ public class QueryTransform {
                 m_out.append(ref.m_column);
             } else {
 
+                String rhs_value = this.parse(def.m_type, rhs);
                 switch (def.m_type) {
-                    case NUMBER:
+                    case INTEGER:
+                        SqlFormat.format_number(m_out, m_params, token.value(), def.m_column, rhs_value);
+                        break;
+                    case STRING:
+                        SqlFormat.format_string(m_out, m_params, token.value(), def.m_column, rhs_value);
+                        break;
+                    case EPOCHTIME_SECONDS:
+                        SqlFormat.format_number(m_out, m_params, token.value(), def.m_column, rhs_value);
+                        break;
+                    case EPOCHTIME_MILLISECONDS:
+                        SqlFormat.format_number(m_out, m_params, token.value(), def.m_column, rhs_value);
+                        break;
+                    case DURATION:
+                        SqlFormat.format_number(m_out, m_params, token.value(), def.m_column, rhs_value);
+                        break;
+                    default:
+                        throw new TransformError(lhs, "unhandled type: " + def.m_type.name());
+                }
+                /*
+                switch (def.m_type) {
+                    case INTEGER:
                         SqlFormat.format_number(m_out, m_params, token.value(), def.m_column, parse_integer(rhs));
                         break;
                     case STRING:
                         SqlFormat.format_string(m_out, m_params, token.value(), def.m_column, parse_string(rhs));
                         break;
-                    case EPOCHTIME:
+                    case EPOCHTIME_SECONDS:
                         long epoch_time = System.currentTimeMillis()/1000;
                         epoch_time += _parse_integer(rhs);
                         SqlFormat.format_number(m_out, m_params, token.value(), def.m_column, Long.toString(epoch_time));
@@ -225,6 +245,7 @@ public class QueryTransform {
                     default:
                         throw new TransformError(lhs, "unhandled type: " + def.m_type.name());
                 }
+                */
 
             }
 
@@ -290,125 +311,6 @@ public class QueryTransform {
             return def;
         }
     }
-    /**
-     * parse a token and return the date as an epoch time
-     *  L_NUMBER -> year/01/01
-     *  L_NUMBER / L_NUMBER -> year/month/01
-     *  L_NUMBER / L_NUMBER / L_NUMBER -> year/month/day
-     *
-     * @param token
-     * @return epoch time
-     */
-    public int parse_date(Token token) {
-
-        return 0;
-    }
-
-    /**
-     * parse a token and return 24-hour time as seconds
-     * @param token
-     * @return
-     */
-    public int parse_time(Token token) {
-        return 0;
-    }
-
-    /**
-     * parse a token and return duration as seconds
-     * @param token
-     * @return
-     */
-    public int parse_duration(Token token) {
-        return 0;
-    }
-    /**
-     * parse a token and return 24-hour time as seconds
-     *   L_NUMBER
-     *   UNARY<-> L_NUMBER
-     * @param token
-     * @return
-     */
-    public int _parse_integer(Token token) throws TransformError {
-
-        boolean negate = false;
-
-        while (token.kind() == TokenKind.P_UNARY) {
-            if (token.children().size()==0) {
-                throw new TransformError(token, "missing rhs");
-            }
-            if (token.value().equals("-")) {
-                negate = !negate;
-            } else if (token.value().equals("+")) {
-                negate = false;
-            }
-            token = token.children().get(0);
-        }
-
-        if (token.kind() != TokenKind.L_NUMBER) {
-            throw new TransformError(token, "not a number");
-        }
-
-        String value = token.value();
-        value = value.replaceAll("_", "");
-
-        int ivalue;
-
-        int multiplier = 1;
-        /*if (value.endsWith("ms")) {
-            multiplier = 1;
-            value = value.substring(0, value.length() - 2);
-        } else */
-        if (value.endsWith("s")) {
-            multiplier = 1;
-            value = value.substring(0, value.length() - 1);
-        } else if (value.endsWith("m")) {
-            multiplier = 60;
-            value = value.substring(0, value.length() - 1);
-        } else if (value.endsWith("h")) {
-            multiplier = 60*60;
-            value = value.substring(0, value.length() - 1);
-        } else if (value.endsWith("d")) {
-            // TODO: should be now.day +/- 1...
-            multiplier = 60*60*24;
-            value = value.substring(0, value.length() - 1);
-        } else if (value.endsWith("w")) {
-            // TODO: should be now.day +/- 7...
-            multiplier = 60*60*24*7;
-            value = value.substring(0, value.length() - 1);
-        } else if (value.endsWith("M")) {
-            // TODO: should be now.month +/- 1...
-            multiplier = 60*60*24*28;
-            value = value.substring(0, value.length() - 1);
-        } else if (value.endsWith("y")) {
-            // TODO: should be now.year +/- 1...
-            multiplier = 60*60*24*52;
-            value = value.substring(0, value.length() - 1);
-        }
-
-        if (value.startsWith("0x")) {
-            ivalue = Integer.parseInt(value.substring(2), 16);
-        } else if (value.startsWith("0o")) {
-            ivalue = Integer.parseInt(value.substring(2), 8);
-        } else if (value.startsWith("0n")) {
-            ivalue = Integer.parseInt(value.substring(2), 4);
-        } else if (value.startsWith("0b")) {
-            ivalue = Integer.parseInt(value.substring(2), 2);
-        } else {
-            ivalue = Integer.parseInt(value);
-        }
-
-        if (negate) {
-            ivalue *= -1;
-        }
-
-        ivalue *= multiplier;
-
-        return ivalue;
-    }
-
-    public String parse_integer(Token token) throws TransformError {
-        return Integer.toString(_parse_integer(token));
-    }
 
     /**
      * parse a token and return 24-hour time as seconds
@@ -425,5 +327,139 @@ public class QueryTransform {
             default:
                 throw new TransformError(token, "not a string");
         }
+    }
+
+    public String parse(SqlType type, Token token) throws DslException {
+
+        QObject obj = new Eval().eval(token);
+
+        String result;
+        switch (type) {
+            case INTEGER:
+                result = parse_v2_integer(obj);
+                break;
+            case FLOAT:
+                result = parse_v2_float(obj);
+                break;
+            case STRING:
+                result = parse_v2_string(obj);
+                break;
+            case EPOCHTIME_SECONDS:
+                result = parse_v2_epochtime_seconds(obj);
+                break;
+            case EPOCHTIME_MILLISECONDS:
+                result = parse_v2_epochtime_milliseconds(obj);
+                break;
+            case DURATION:
+                result = parse_v2_duration(obj);
+                break;
+            default:
+                throw new DslException("invalid type");
+        }
+
+        return result;
+    }
+
+    private String parse_v2_integer(QObject obj) throws DslException {
+
+        Class c = obj.getClass();
+
+        if (c == QInteger.class) {
+            return obj.toString();
+        } else if (c == QDouble.class) {
+            return new QInteger(QDouble.class.cast(obj)).toString();
+        }
+
+        throw newTypeError("Integer", c.getSimpleName());
+    }
+
+    private String parse_v2_float(QObject obj) throws DslException {
+        Class c = obj.getClass();
+
+        if (c == QInteger.class) {
+            return new QDouble(QInteger.class.cast(obj)).toString();
+        } else if (c == QDouble.class) {
+            return obj.toString();
+        }
+
+        throw newTypeError("Float", c.getSimpleName());
+    }
+
+    private String parse_v2_string(QObject obj) throws DslException {
+        Class c = obj.getClass();
+
+        if (c == QString.class) {
+            return obj.toString();
+        }
+
+        throw newTypeError("String", c.getSimpleName());
+    }
+
+    private String parse_v2_epochtime_seconds(QObject obj) throws DslException {
+        Class c = obj.getClass();
+
+        if (c == QDateTime.class) {
+            QDateTime dt = QDateTime.class.cast(obj);
+            return Long.toString(dt.toEpochTime() / 1000);
+        } else if (c == QString.class) {
+            QString s = QString.class.cast(obj);
+            QDateTime dt = QDateTime.fromString(s.toString());
+            return Long.toString(dt.toEpochTime() / 1000);
+        } else if (m_current_time != null && c == QDateDelta.class) {
+            QDateDelta dd = QDateDelta.class.cast(obj);
+            QDateTime result = QDateTime.class.cast(m_current_time.add(dd));
+            return Long.toString(result.toEpochTime()/1000);
+        } else if (m_current_time != null && c == QDuration.class) {
+            QDuration dd = QDuration.class.cast(obj);
+            QDateTime result = QDateTime.class.cast(m_current_time.add(dd));
+            return Long.toString(result.toEpochTime()/1000);
+        }
+
+        throw newTypeError("DateTime", c.getSimpleName());
+    }
+
+    private String parse_v2_epochtime_milliseconds(QObject obj) throws DslException {
+        Class c = obj.getClass();
+        if (c == QDateTime.class) {
+            QDateTime dt = QDateTime.class.cast(obj);
+            return Long.toString(dt.toEpochTime());
+        } else if (c == QString.class) {
+            QString s = QString.class.cast(obj);
+            QDateTime dt = QDateTime.fromString(s.toString());
+            return Long.toString(dt.toEpochTime());
+        } else if (m_current_time != null && c == QDateDelta.class) {
+            QDateDelta dd = QDateDelta.class.cast(obj);
+            QDateTime result = QDateTime.class.cast(m_current_time.add(dd));
+            return Long.toString(result.toEpochTime());
+        } else if (m_current_time != null && c == QDuration.class) {
+            QDuration dd = QDuration.class.cast(obj);
+            QDateTime result = QDateTime.class.cast(m_current_time.add(dd));
+            return Long.toString(result.toEpochTime());
+        }
+        throw newTypeError("DateTime", c.getSimpleName());
+    }
+
+    private String parse_v2_duration(QObject obj) throws DslException {
+        Class c = obj.getClass();
+
+        if (c == QDuration.class) {
+            QDuration dd = QDuration.class.cast(obj);
+            return Long.toString(dd.toSeconds());
+        } else if (c == QInteger.class) {
+            return obj.toString();
+        } else if (c == QDouble.class) {
+            return new QInteger(QDouble.class.cast(obj)).toString();
+        }
+
+        throw newTypeError("Duration", c.getSimpleName());
+    }
+
+    private DslException newTypeError(String expected, String received) {
+        return new DslException("Type Error. Expected: " + expected +
+                " But received type: " + received);
+    }
+
+    public void setCurrentDateTime(QDateTime dt) {
+        m_current_time = dt;
     }
 }

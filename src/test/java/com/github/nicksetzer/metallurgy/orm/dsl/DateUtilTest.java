@@ -3,8 +3,6 @@ package com.github.nicksetzer.metallurgy.orm.dsl;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Date;
-
 public class DateUtilTest {
 
     @Test
@@ -59,7 +57,7 @@ public class DateUtilTest {
     public void test_add() throws DslException {
 
         QDateTime dt = QDateTime.fromString("2020/01/01T12:34:56.789");
-        dt.add(new QTimeDelta(QTimeDelta.Mode.HOURS, 4));
+        dt.add(new QDateDelta(QDateDelta.Mode.HOURS, 4));
 
 
     }
@@ -67,14 +65,22 @@ public class DateUtilTest {
     @Test
     public void test_timedelta_fromString() throws DslException {
 
-        QTimeDelta td = QTimeDelta.fromString("12:34:56.123");
+        QDateDelta td = QDateDelta.fromString("12:34:56.123");
         Assert.assertEquals(td.toString(), "12:34:56.123");
 
-        td = QTimeDelta.fromString("34:56");
+        td = QDateDelta.fromString("34:56");
         Assert.assertEquals(td.toString(), "0:34:56");
 
-        td = QTimeDelta.fromString("1y1w");
+        td = QDateDelta.fromString("1y1w");
         Assert.assertEquals(td.toString(), "1y7d");
+
+    }
+
+    @Test
+    public void test_now() throws DslException {
+
+        QDateTime dt = DateUtil.now();
+        System.out.println(dt.toString());
 
     }
 }

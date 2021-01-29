@@ -11,28 +11,46 @@ public class QueryTransformTest {
     private static class TestQueryTransform extends QueryTransform {
 
         TestQueryTransform() {
-            addColumnDef("rating", new String[]{"rating", "rte"}, SqlType.NUMBER);
-            addColumnDef("date", new String[]{"date"}, SqlType.EPOCHTIME);
+            addColumnDef("name", new String[]{"name"}, SqlType.STRING);
+            addColumnDef("rating", new String[]{"rating", "rte"}, SqlType.INTEGER);
+            addColumnDef("date", new String[]{"date"}, SqlType.EPOCHTIME_SECONDS);
+            addColumnDef("duration", new String[]{"duration"}, SqlType.DURATION);
 
             TableDef tbl = addTableDef("user", new String[]{"user"});
             tbl.addColumnDef("user.name", new String[]{"name"}, SqlType.STRING);
             enableAllText(new String[]{"artist", "albums"});
+
         }
 
-        static Pair<String, List<String>> do_transform(Token mod) throws TransformError {
+        static Pair<String, List<String>> do_transform(Token mod) throws DslException {
             TestQueryTransform xform = new TestQueryTransform();
             return xform.transform(mod);
         }
     }
 
-    @Test
-    public void test_all_text_1() throws ParserBase.ParseError, QueryTransform.TransformError {
+    Pair<String, List<String>> parse_and_transform(String str) throws DslException {
+        QDateTime dt = DateUtil.now();
+        try {
+            dt = QDateTime.fromString("2020/01/01");
+        } catch(EvalException e) {
+            System.out.println(e.toString());
+        }
 
         QueryParser parser = new QueryParser();
-        Token mod = parser.parse("stp");
-        //System.out.println(mod.toDebugString());
+        parser.setCurrentDateTime(dt);
 
-        Pair<String, List<String>> pair = TestQueryTransform.do_transform(mod);
+        Token mod = parser.parse(str);
+
+        TestQueryTransform xform = new TestQueryTransform();
+        xform.setCurrentDateTime(dt);
+        Pair<String, List<String>> pair = xform.transform(mod);
+        return pair;
+    }
+
+    @Test
+    public void test_all_text_1() throws DslException {
+
+        Pair<String, List<String>> pair = parse_and_transform("stp");
 
         Assert.assertEquals("((lower(artist) LIKE lower(?) OR lower(albums) LIKE lower(?)))", pair.first);
         Assert.assertEquals(2, pair.second.size());
@@ -41,13 +59,19 @@ public class QueryTransformTest {
     }
 
     @Test
-    public void test_number_1() throws ParserBase.ParseError, QueryTransform.TransformError {
+    public void test_number_1() throws DslException {
 
-        QueryParser parser = new QueryParser();
-        Token mod = parser.parse("rte < 0xF");
-        //System.out.println(mod.toDebugString());
+        Pair<String, List<String>> pair = parse_and_transform("rte < 123");
 
-        Pair<String, List<String>> pair = TestQueryTransform.do_transform(mod);
+        Assert.assertEquals("(rating < ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        Assert.assertEquals("123", pair.second.get(0));
+    }
+
+    @Test
+    public void test_number_2() throws DslException {
+
+        Pair<String, List<String>> pair = parse_and_transform("rte < 0xF");
 
         Assert.assertEquals("(rating < ?)", pair.first);
         Assert.assertEquals(1, pair.second.size());
@@ -55,13 +79,49 @@ public class QueryTransformTest {
     }
 
     @Test
-    public void test_table_def() throws ParserBase.ParseError, QueryTransform.TransformError {
+    public void test_number_3() throws DslException {
 
-        QueryParser parser = new QueryParser();
-        Token mod = parser.parse("user.name == 'bob'");
-        //System.out.println(mod.toDebugString());
+        Pair<String, List<String>> pair = parse_and_transform("rte < - 7/2");
 
-        Pair<String, List<String>> pair = TestQueryTransform.do_transform(mod);
+        Assert.assertEquals("(rating < ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        Assert.assertEquals("-3", pair.second.get(0));
+    }
+
+    @Test
+    public void test_number_4() throws DslException {
+
+        Pair<String, List<String>> pair = parse_and_transform("rte < - 7.0/2");
+
+        Assert.assertEquals("(rating < ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        Assert.assertEquals("-3", pair.second.get(0));
+    }
+
+    @Test
+    public void test_str_1() throws DslException {
+
+        Pair<String, List<String>> pair = parse_and_transform("name == 'a' + \"b\"");
+
+        Assert.assertEquals("(name = ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        Assert.assertEquals("ab", pair.second.get(0));
+    }
+
+    @Test
+    public void test_duration_1() throws DslException {
+
+        Pair<String, List<String>> pair = parse_and_transform("duration < 3:00");
+
+        Assert.assertEquals("(duration < ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        Assert.assertEquals("180", pair.second.get(0));
+    }
+
+    @Test
+    public void test_table_def() throws DslException {
+
+        Pair<String, List<String>> pair = parse_and_transform("user.name == 'bob'");
 
         Assert.assertEquals("(user.name = ?)", pair.first);
         Assert.assertEquals(1, pair.second.size());
@@ -69,7 +129,7 @@ public class QueryTransformTest {
     }
 
     @Test
-    public void test_keyword() throws ParserBase.ParseError, QueryTransform.TransformError {
+    public void test_keyword() throws DslException {
 
         QueryParser parser = new QueryParser();
         Token mod_1 = parser.parse("\"ABC\" or \"DEF\"");
@@ -89,49 +149,50 @@ public class QueryTransformTest {
     }
 
     @Test
-    public void test_reference() throws ParserBase.ParseError, QueryTransform.TransformError {
+    public void test_reference() throws DslException {
 
-        QueryParser parser = new QueryParser();
-        Token mod = parser.parse("rte = &rte");
-        System.out.println(mod.toDebugString());
-
-        Pair<String, List<String>> pair = TestQueryTransform.do_transform(mod);
-        System.out.println(pair.first);
+        Pair<String, List<String>> pair = parse_and_transform("rte = &rte");
+        Assert.assertEquals("(rating = rating)", pair.first);
 
     }
 
     @Test
-    public void test_epochtime() throws ParserBase.ParseError, QueryTransform.TransformError {
+    public void test_epochtime_1() throws DslException{
 
-        QueryParser parser = new QueryParser();
-        Token mod = parser.parse("date > -5d");
-        System.out.println(mod.toDebugString());
+        Pair<String, List<String>> pair = parse_and_transform("date > -5d");
+        Assert.assertEquals("(date > ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        Assert.assertEquals("1577422800", pair.second.get(0));
+    }
+    @Test
+    public void test_epochtime_2() throws DslException{
 
-        Pair<String, List<String>> pair = TestQueryTransform.do_transform(mod);
-        System.out.println(pair.first);
-        System.out.println(pair.second);
+        Pair<String, List<String>> pair = parse_and_transform("date > \"2020/01/01\"");
+        Assert.assertEquals("(date > ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        Assert.assertEquals("1577854800", pair.second.get(0));
 
     }
 
     @Test
-    public void test_all_text_2() throws ParserBase.ParseError, QueryTransform.TransformError {
+    public void test_epochtime_3() throws DslException{
 
-        System.out.println(DslException.format(new Token(TokenKind.P_COMPARE, "==", new Position(1,0)), "sample error"));
-        QueryParser parser = new QueryParser();
-        //Token mod = parser.parse("rte < 5 || stp");
-        Token mod = parser.parse("rating = -+-0b1010");
-        System.out.println(mod.toDebugString());
+        Pair<String, List<String>> pair = parse_and_transform("date > \"2020/01/01\" + 1:2:3");
+        Assert.assertEquals("(date > ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        Assert.assertEquals("1577858523", pair.second.get(0));
 
-        QueryTransform xform = new QueryTransform();
-        xform.addColumnDef("rating", new String[]{"rte"}, QueryTransform.SqlType.NUMBER);
-        xform.enableAllText(new String[]{"artist", "albums"});
+    }
 
-        Pair<String, List<String>> pair = xform.transform(mod);
+    @Test
+    public void test_epochtime_4() throws DslException {
 
+        Pair<String, List<String>> pair = parse_and_transform("(name = \"ONE\" || name = \"TWO\") or date lt -5d");
+        Assert.assertEquals("((lower(name) LIKE lower(?) OR lower(name) LIKE lower(?)) OR date < ?)", pair.first);
+        Assert.assertEquals(3, pair.second.size());
+        Assert.assertEquals("%ONE%", pair.second.get(0));
+        Assert.assertEquals("%TWO%", pair.second.get(1));
+        Assert.assertEquals("1577422800", pair.second.get(2));
 
-        System.out.println("sql:" + pair.first);
-        for (int i=0; i < pair.second.size(); i++) {
-            System.out.println(i + ":" + pair.second.get(i));
-        }
     }
 }
