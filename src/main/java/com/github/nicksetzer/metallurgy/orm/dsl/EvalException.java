@@ -8,7 +8,7 @@ public class EvalException extends DslException {
     }
 
     public static EvalException invalidType(QObject obj) {
-        return new EvalException("Invalid Type: " + obj.getClass().toString());
+        return new EvalException("Invalid Type: " + obj.getClass().getSimpleName());
     }
 
     public static EvalException notImplemented(String msg) {

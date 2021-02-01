@@ -11,7 +11,10 @@ public class DateUtil {
     }
 
     public static void add_date_delta(QDateTime dt, int dy, int dm, int dd) {
-        Calendar calendar = new Calendar.Builder().setDate(dt.year, dt.month-1, dt.day).build();
+        Calendar calendar = new Calendar.Builder()
+                .setDate(dt.year, dt.month-1, dt.day)
+                .setTimeOfDay(dt.hours, dt.minutes, dt.seconds, dt.milliseconds)
+                .build();
         calendar.add(Calendar.YEAR, dy);
         calendar.add(Calendar.MONTH, dm);
         calendar.add(Calendar.DAY_OF_MONTH, dd);
@@ -19,6 +22,7 @@ public class DateUtil {
         dt.year = calendar.get(Calendar.YEAR);
         dt.month = calendar.get(Calendar.MONTH)+1;
         dt.day = calendar.get(Calendar.DAY_OF_MONTH);
+
     }
 
     public static void add_time_delta(QDateTime dt, int dH, int dM, int dS, int dMS) {
@@ -26,7 +30,7 @@ public class DateUtil {
                 .setDate(dt.year, dt.month-1, dt.day)
                 .setTimeOfDay(dt.hours, dt.minutes, dt.seconds, dt.milliseconds)
                 .build();
-        calendar.add(Calendar.HOUR, dH);
+        calendar.add(Calendar.HOUR_OF_DAY, dH);
         calendar.add(Calendar.MINUTE, dM);
         calendar.add(Calendar.SECOND, dS);
         calendar.add(Calendar.MILLISECOND, dMS);
@@ -34,12 +38,11 @@ public class DateUtil {
         dt.year = calendar.get(Calendar.YEAR);
         dt.month = calendar.get(Calendar.MONTH)+1;
         dt.day = calendar.get(Calendar.DAY_OF_MONTH);
-        dt.hours = calendar.get(Calendar.HOUR);
+        dt.hours = calendar.get(Calendar.HOUR_OF_DAY);
         dt.minutes = calendar.get(Calendar.MINUTE);
         dt.seconds = calendar.get(Calendar.SECOND);
         dt.milliseconds = calendar.get(Calendar.MILLISECOND);
 
-        calendar.getTimeInMillis();
     }
 
     public static void add_time_delta(QDateTime dt, long dMS) {
@@ -64,7 +67,7 @@ public class DateUtil {
         h = m / 60;
         m = m % 60;
 
-        calendar.add(Calendar.HOUR, sign * (int) h);
+        calendar.add(Calendar.HOUR_OF_DAY, sign * (int) h);
         calendar.add(Calendar.MINUTE, sign *(int) m);
         calendar.add(Calendar.SECOND, sign *(int) s);
         calendar.add(Calendar.MILLISECOND, sign * (int) ms);
@@ -72,7 +75,7 @@ public class DateUtil {
         dt.year = calendar.get(Calendar.YEAR);
         dt.month = calendar.get(Calendar.MONTH)+1;
         dt.day = calendar.get(Calendar.DAY_OF_MONTH);
-        dt.hours = calendar.get(Calendar.HOUR);
+        dt.hours = calendar.get(Calendar.HOUR_OF_DAY);
         dt.minutes = calendar.get(Calendar.MINUTE);
         dt.seconds = calendar.get(Calendar.SECOND);
         dt.milliseconds = calendar.get(Calendar.MILLISECOND);
@@ -86,6 +89,23 @@ public class DateUtil {
                 .setTimeOfDay(dt.hours, dt.minutes, dt.seconds, dt.milliseconds)
                 .build();
         return calendar.getTimeInMillis();
+    }
+
+    public static QDateTime epoch_time(long epochtime_ms) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(epochtime_ms);
+
+        QDateTime dt = new QDateTime(
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH) + 1,
+                calendar.get(Calendar.DAY_OF_MONTH),
+                calendar.get(Calendar.HOUR_OF_DAY),
+                calendar.get(Calendar.MINUTE),
+                calendar.get(Calendar.SECOND),
+                calendar.get(Calendar.MILLISECOND)
+        );
+
+        return dt;
     }
 
     public static QDateTime now() {

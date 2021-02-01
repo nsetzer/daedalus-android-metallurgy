@@ -160,8 +160,7 @@ public class QueryTransform {
                     m_seq.add(lhs);
                     break;
                 default:
-                    System.out.println("unhandled kind: " + tok.kind().name());
-                    break;
+                    throw new DslException(tok, "Unhandled Kind for SQL Transform");
             }
 
         }
@@ -169,7 +168,7 @@ public class QueryTransform {
     }
 
     public void push_children(Token token) {
-        for (Token child : new Reversed<>(token.children())) {
+        for (Token child : Reversed.reversed(token.children())) {
             m_seq.add(child);
         }
     }

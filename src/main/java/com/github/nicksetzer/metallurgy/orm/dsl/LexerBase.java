@@ -1,7 +1,6 @@
 package com.github.nicksetzer.metallurgy.orm.dsl;
 
 import java.util.ArrayList;
-import java.util.Set;
 
 public class LexerBase {
 
@@ -138,6 +137,7 @@ public class LexerBase {
      * @param kind
      * @param charset
      */
+    /*
     public void lex_charset(TokenKind kind, Set<Integer> charset) {
 
         maybe_push();
@@ -155,5 +155,6 @@ public class LexerBase {
         return;
 
     }
+    */
 
 }

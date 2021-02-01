@@ -12,49 +12,10 @@ public class Eval {
 
     }
 
+
     public QObject eval(Token token) throws DslException {
 
-        m_sequence = new Stack<>();
-        m_stack = new Stack<>();
-        Stack<Token> seq = new Stack<>();
-
-        seq.add(token);
-
-        while (!seq.empty()) {
-            Token tok = seq.pop();
-
-            switch (tok.kind()) {
-
-                case P_GROUPING:
-                    for (Token child : new Reversed<Token>(tok.children())) {
-                        seq.add(child);
-                    }
-                    break;
-                case P_BINARY:
-                case P_UNARY:
-                    //System.out.println("1: " + tok.toString());
-                    m_sequence.add(tok);
-                    for (Token child : new Reversed<Token>(tok.children())) {
-                        seq.add(child);
-                    }
-                    break;
-                case L_IDENTIFIER:
-                case L_STRING:
-                case L_NUMBER:
-                case L_DATE_DELTA:
-                case L_DURATION:
-                    //System.out.println("2: " + tok.toString());
-                    m_sequence.add(tok);
-                    break;
-                case P_LOGICAL_AND:
-                case P_LOGICAL_NOT:
-                case P_LOGICAL_OR:
-                default:
-                    throw new RuntimeException("unexpected kind: " + tok.kind().name());
-
-
-            }
-        }
+        unravel(token);
 
         while (!m_sequence.empty()) {
             Token tok = m_sequence.pop();
@@ -122,5 +83,54 @@ public class Eval {
 
         //System.out.println("stack: " + m_stack.toString());
         return m_stack.pop();
+    }
+
+    /**
+     * Unravel an AST into a sequence to be evaluated
+     * @param token
+     * @throws DslException
+     */
+    private void unravel(Token token) throws DslException {
+        m_sequence = new Stack<>();
+        m_stack = new Stack<>();
+        Stack<Token> seq = new Stack<>();
+
+        seq.add(token);
+
+        while (!seq.empty()) {
+            Token tok = seq.pop();
+
+            switch (tok.kind()) {
+
+                case P_GROUPING:
+                    for (Token child : Reversed.reversed(tok.children())) {
+                        seq.add(child);
+                    }
+                    break;
+                case P_BINARY:
+                case P_UNARY:
+                    //System.out.println("1: " + tok.toString());
+                    m_sequence.add(tok);
+                    for (Token child : Reversed.reversed(tok.children())) {
+                        seq.add(child);
+                    }
+                    break;
+                case L_IDENTIFIER:
+                case L_STRING:
+                case L_NUMBER:
+                case L_DATE_DELTA:
+                case L_DURATION:
+                    //System.out.println("2: " + tok.toString());
+                    m_sequence.add(tok);
+                    break;
+                case P_LOGICAL_AND:
+                case P_LOGICAL_NOT:
+                case P_LOGICAL_OR:
+                default:
+                    throw new RuntimeException("unexpected kind: " + tok.kind().name());
+
+
+            }
+        }
     }
 }

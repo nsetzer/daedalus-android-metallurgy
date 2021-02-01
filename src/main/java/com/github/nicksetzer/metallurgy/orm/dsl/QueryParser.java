@@ -126,20 +126,20 @@ public class QueryParser extends ParserBase {
 
             // test accept
             if (child.kind() != TokenKind.L_SYMBOL || !m_operators.contains(child.value())) {
+
                 return 1;
             }
 
             if (child_index > 0) {
 
                 Token lhs = token.children().get(child_index - 1);
-                //System.out.println("lhs:" + lhs.toDebugString());
-                if (lhs.kind() != TokenKind.L_SYMBOL) {
+                if (lhs.kind() != TokenKind.L_SYMBOL && lhs.kind() != TokenKind.P_COMPARE) {
+
                     return 1;
                 }
             }
 
             Token rhs = consume(token, child_index, 1);
-            //System.out.println("rhs:" + rhs.toDebugString());
 
             child.m_kind = m_output_kind;
 

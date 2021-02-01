@@ -40,11 +40,21 @@ public class QueryTransformTest {
         parser.setCurrentDateTime(dt);
 
         Token mod = parser.parse(str);
+        //System.out.println(mod.toDebugString());
 
         TestQueryTransform xform = new TestQueryTransform();
         xform.setCurrentDateTime(dt);
         Pair<String, List<String>> pair = xform.transform(mod);
         return pair;
+    }
+
+    @Test
+    public void test_token_debug_string() throws DslException {
+        Token tok = new Token();
+        tok.m_children.add(new Token());
+        tok.m_children.add(new Token());
+        String str = tok.toDebugString();
+        Assert.assertEquals("UNKNOWN<\"\">{UNKNOWN<\"\">,UNKNOWN<\"\">}", str);
     }
 
     @Test
@@ -162,7 +172,9 @@ public class QueryTransformTest {
         Pair<String, List<String>> pair = parse_and_transform("date > -5d");
         Assert.assertEquals("(date > ?)", pair.first);
         Assert.assertEquals(1, pair.second.size());
-        Assert.assertEquals("1577422800", pair.second.get(0));
+        //Assert.assertEquals("1577422800", pair.second.get(0));
+        QDateTime dt = QDateTime.fromEpochTime(1000*Long.parseLong(pair.second.get(0)));
+        Assert.assertEquals("2019/12/27", dt.toString());
     }
     @Test
     public void test_epochtime_2() throws DslException{
@@ -170,7 +182,9 @@ public class QueryTransformTest {
         Pair<String, List<String>> pair = parse_and_transform("date > \"2020/01/01\"");
         Assert.assertEquals("(date > ?)", pair.first);
         Assert.assertEquals(1, pair.second.size());
-        Assert.assertEquals("1577854800", pair.second.get(0));
+        //Assert.assertEquals("1577854800", pair.second.get(0));
+        QDateTime dt = QDateTime.fromEpochTime(1000*Long.parseLong(pair.second.get(0)));
+        Assert.assertEquals("2020/01/01", dt.toString());
 
     }
 
@@ -180,12 +194,74 @@ public class QueryTransformTest {
         Pair<String, List<String>> pair = parse_and_transform("date > \"2020/01/01\" + 1:2:3");
         Assert.assertEquals("(date > ?)", pair.first);
         Assert.assertEquals(1, pair.second.size());
-        Assert.assertEquals("1577858523", pair.second.get(0));
+        //Assert.assertEquals("1577858523", pair.second.get(0));
+        QDateTime dt = QDateTime.fromEpochTime(1000*Long.parseLong(pair.second.get(0)));
+        Assert.assertEquals("2020/01/01T1:02:03", dt.toString());
 
     }
 
     @Test
-    public void test_epochtime_4() throws DslException {
+    public void test_epochtime_4() throws DslException{
+
+        Pair<String, List<String>> pair = parse_and_transform("date > \"2020/01/01\" - 1:2:3");
+        Assert.assertEquals("(date > ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        //Assert.assertEquals("1577851077", pair.second.get(0));
+        QDateTime dt = QDateTime.fromEpochTime(1000*Long.parseLong(pair.second.get(0)));
+        Assert.assertEquals("2019/12/31T22:57:57", dt.toString());
+    }
+
+    @Test
+    public void test_epochtime_5() throws DslException{
+
+        Pair<String, List<String>> pair = parse_and_transform("date > \"20/01/01T18:34:56.123\" - 1y");
+        Assert.assertEquals("(date > ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        //Assert.assertEquals("1546320896", pair.second.get(0));
+        QDateTime dt = QDateTime.fromEpochTime(1000*Long.parseLong(pair.second.get(0)));
+        Assert.assertEquals("2019/01/01T18:34:56", dt.toString());
+
+    }
+
+    @Test
+    public void test_datedelta_1() throws DslException{
+
+        Pair<String, List<String>> pair = parse_and_transform("date > \"20/01/01\" + (1y - 1w + 1d)");
+        Assert.assertEquals("(date > ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        //Assert.assertEquals("1546320896", pair.second.get(0));
+        QDateTime dt = QDateTime.fromEpochTime(1000*Long.parseLong(pair.second.get(0)));
+        Assert.assertEquals("2020/12/26", dt.toString());
+
+    }
+
+
+    @Test
+    public void test_datedelta_2() throws DslException{
+
+        Pair<String, List<String>> pair = parse_and_transform("date > \"20/01/01\" + (1y + 5:00)");
+        Assert.assertEquals("(date > ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        //Assert.assertEquals("1546320896", pair.second.get(0));
+        QDateTime dt = QDateTime.fromEpochTime(1000*Long.parseLong(pair.second.get(0)));
+        Assert.assertEquals("2021/01/01T0:05:00", dt.toString());
+
+    }
+
+    @Test
+    public void test_datedelta_3() throws DslException{
+
+        Pair<String, List<String>> pair = parse_and_transform("date lt -14d");
+        Assert.assertEquals("(date < ?)", pair.first);
+        Assert.assertEquals(1, pair.second.size());
+        //Assert.assertEquals("1546320896", pair.second.get(0));
+        QDateTime dt = QDateTime.fromEpochTime(1000*Long.parseLong(pair.second.get(0)));
+        Assert.assertEquals("2019/12/18", dt.toString());
+
+    }
+
+    @Test
+    public void test_complex_1() throws DslException {
 
         Pair<String, List<String>> pair = parse_and_transform("(name = \"ONE\" || name = \"TWO\") or date lt -5d");
         Assert.assertEquals("((lower(name) LIKE lower(?) OR lower(name) LIKE lower(?)) OR date < ?)", pair.first);
@@ -193,6 +269,19 @@ public class QueryTransformTest {
         Assert.assertEquals("%ONE%", pair.second.get(0));
         Assert.assertEquals("%TWO%", pair.second.get(1));
         Assert.assertEquals("1577422800", pair.second.get(2));
+
+    }
+
+    @Test
+    public void test_not_1() throws DslException {
+
+        Pair<String, List<String>> pair = parse_and_transform("x not y");
+        Assert.assertEquals("((lower(artist) LIKE lower(?) OR lower(albums) LIKE lower(?)) AND  NOT (lower(artist) LIKE lower(?) OR lower(albums) LIKE lower(?)))", pair.first);
+        Assert.assertEquals(4, pair.second.size());
+        Assert.assertEquals("%x%", pair.second.get(0));
+        Assert.assertEquals("%x%", pair.second.get(1));
+        Assert.assertEquals("%y%", pair.second.get(2));
+        Assert.assertEquals("%y%", pair.second.get(3));
 
     }
 }

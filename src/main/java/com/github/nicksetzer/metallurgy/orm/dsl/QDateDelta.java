@@ -66,12 +66,12 @@ public class QDateDelta extends QObject {
     @Override
     public QObject add(QObject other) throws EvalException {
         if (other.getClass() == QInteger.class) {
-            QDateDelta dd = this.copy();
-            QInteger o = QInteger.class.cast(other);
+            //QDateDelta dd = this.copy();
+            //QInteger o = QInteger.class.cast(other);
             //return new QDateDelta(milliseconds / o.value);
         } else if (other.getClass() == QDouble.class) {
-            QDateDelta dd = this.copy();
-            QDouble o = QDouble.class.cast(other);
+            //QDateDelta dd = this.copy();
+            //QDouble o = QDouble.class.cast(other);
             //return new QDateDelta((long) (milliseconds / o.value));
         } else if (other.getClass() == QDuration.class) {
             QDateDelta dd = this.copy();
@@ -89,13 +89,38 @@ public class QDateDelta extends QObject {
             dd.seconds += o.seconds;
             dd.milliseconds += o.milliseconds;
             return dd;
-            //return new QDateDelta(milliseconds / o.milliseconds);
         }
         throw EvalException.invalidType(other);
     }
 
     @Override
     public QObject sub(QObject other) throws EvalException {
+        if (other.getClass() == QInteger.class) {
+            //QDateDelta dd = this.copy();
+            //QInteger o = QInteger.class.cast(other);
+            //return new QDateDelta(milliseconds / o.value);
+        } else if (other.getClass() == QDouble.class) {
+            //QDateDelta dd = this.copy();
+            //QDouble o = QDouble.class.cast(other);
+            //return new QDateDelta((long) (milliseconds / o.value));
+        } else if (other.getClass() == QDuration.class) {
+            QDateDelta dd = this.copy();
+            QDuration o = QDuration.class.cast(other);
+            dd.milliseconds -= o.milliseconds;
+            return dd;
+        } else if (other.getClass() == QDateDelta.class) {
+            QDateDelta dd = this.copy();
+            QDateDelta o = QDateDelta.class.cast(other);
+            dd.years -= o.years;
+            dd.months -= o.months;
+            dd.days -= o.days;
+            dd.hours -= o.hours;
+            dd.minutes -= o.minutes;
+            dd.seconds -= o.seconds;
+            dd.milliseconds -= o.milliseconds;
+            return dd;
+            //return new QDateDelta(milliseconds / o.milliseconds);
+        }
         throw EvalException.invalidType(other);
     }
 

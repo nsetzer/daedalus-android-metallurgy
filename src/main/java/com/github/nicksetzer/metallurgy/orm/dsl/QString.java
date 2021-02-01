@@ -27,7 +27,18 @@ public class QString extends QObject {
     }
 
     public QObject sub(QObject other) throws EvalException {
-        throw EvalException.notImplemented("sub");
+        Class c = other.getClass();
+        if (c == QDateDelta.class) {
+            // RHS rule: cast self (str) to date time, add time delta
+            QDateTime dt = QDateTime.fromString(value);
+            return dt.sub(other);
+        } else if (c == QDuration.class) {
+            // RHS rule: cast self (str) to date time, add time delta
+            QDateTime dt = QDateTime.fromString(value);
+            return dt.sub(other);
+        } else {
+            throw EvalException.invalidType(other);
+        }
     }
 
     public QObject mul(QObject other) throws EvalException {

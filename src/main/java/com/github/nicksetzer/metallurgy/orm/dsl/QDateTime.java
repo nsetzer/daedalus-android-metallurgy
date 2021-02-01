@@ -90,7 +90,7 @@ public class QDateTime extends QObject {
 
             if (codepoint == 0) {
                 break;
-            } else if (codepoint == ' ') {
+            } else if (sb.length() == 0 && codepoint == ' ') {
                 iter.getch();
             } else if (codepoint == terminal1 || codepoint == terminal2) {
                 iter.getch();
@@ -238,7 +238,9 @@ public class QDateTime extends QObject {
             }
         }
 
-        return new QDateTime(year, month, day, hours, minutes, seconds, milliseconds);
+        QDateTime dt = new QDateTime(year, month, day, hours, minutes, seconds, milliseconds);
+
+        return dt;
 
     }
 
@@ -268,6 +270,10 @@ public class QDateTime extends QObject {
 
     public Long toEpochTime() {
         return DateUtil.epoch_time(this);
+    }
+
+    public static QDateTime fromEpochTime(long epochtime_ms) {
+        return DateUtil.epoch_time(epochtime_ms);
     }
 
     public QDateTime copy() {
