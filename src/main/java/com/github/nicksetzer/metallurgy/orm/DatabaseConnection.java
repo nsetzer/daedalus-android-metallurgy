@@ -61,6 +61,7 @@ public class DatabaseConnection {
 
         boolean success = false;
         try {
+
             executeBatch(statements);
             success = true;
         } catch (Exception e) {

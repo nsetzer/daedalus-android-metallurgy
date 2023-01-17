@@ -69,8 +69,6 @@ public class EntityTable {
             }
         }
 
-
-
         return effected==1;
     }
 
@@ -82,6 +80,11 @@ public class EntityTable {
     public void delete(long spk) {
         Statement statement = StatementBuilder.prepareDelete(m_schema, spk);
          m_db.execute(statement);
+    }
+
+    public void deleteAllRows() {
+        Statement statement = StatementBuilder.prepareDeleteAllRows(m_schema);
+        m_db.execute(statement);
     }
 
     public void deleteBulk(long[] spks) {

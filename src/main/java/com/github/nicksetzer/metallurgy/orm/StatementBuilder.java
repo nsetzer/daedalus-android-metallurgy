@@ -329,8 +329,13 @@ public class StatementBuilder {
                 clause.append(" && ");
             }
             clause.append(key);
-            clause.append(" == ");
-            clause.append(marshall(params, npk.get(key)));
+            Object value = npk.get(key);
+            if (value instanceof String) {
+                clause.append(" = ");
+            } else {
+                clause.append(" == ");
+            }
+            clause.append(marshall(params, value));
             first = false;
         }
 
@@ -340,11 +345,11 @@ public class StatementBuilder {
         builder.append(" WHERE (");
         builder.append(clause.toString());
         builder.append(")");
-        if (limit >= 0) {
+        if (limit > 0) {
             builder.append(" LIMIT ");
             builder.append(limit);
         }
-        if (offset >= 0) {
+        if (offset > 0 || limit > 0) {
             builder.append(" OFFSET ");
             builder.append(offset);
         }
@@ -358,11 +363,15 @@ public class StatementBuilder {
 
         StringBuilder builder = new StringBuilder();
         builder.append("SELECT ");
-        for (int i=0; i < columns.length; i ++) {
-            if (i > 0) {
-                builder.append(", ");
+        if (columns.length == 0) {
+            builder.append("*");
+        } else {
+            for (int i = 0; i < columns.length; i++) {
+                if (i > 0) {
+                    builder.append(", ");
+                }
+                builder.append(columns[i]);
             }
-            builder.append(columns[i]);
         }
         builder.append(" FROM ");
         builder.append(table.name);
@@ -371,11 +380,11 @@ public class StatementBuilder {
             builder.append(where);
             builder.append(")");
         }
-        if (limit >= 0) {
+        if (limit > 0) {
             builder.append(" LIMIT ");
             builder.append(limit);
         }
-        if (offset >= 0) {
+        if (offset > 0 || limit > 0) {
             builder.append(" OFFSET ");
             builder.append(offset);
         }
@@ -417,8 +426,13 @@ public class StatementBuilder {
                 clause.append(" && ");
             }
             clause.append(key);
-            clause.append(" == ");
-            clause.append(marshall(params, npk.get(key)));
+            Object value = npk.get(key);
+            if (value instanceof String) {
+                clause.append(" = ");
+            } else {
+                clause.append(" == ");
+            }
+            clause.append(marshall(params, value));
             first = false;
         }
 
@@ -456,7 +470,11 @@ public class StatementBuilder {
         builder.append(table.name);
         builder.append(" WHERE (");
         builder.append(columnName);
-        builder.append(" == ");
+        if (columnValue instanceof String) {
+            builder.append(" = ");
+        } else {
+            builder.append(" == ");
+        }
         builder.append(marshall(params, columnValue));
         builder.append(")");
         return new Statement(builder.toString(), params);
@@ -495,8 +513,14 @@ public class StatementBuilder {
                 clause.append(" && ");
             }
             clause.append(key);
-            clause.append(" == ");
-            clause.append(marshall(params, npk.get(key)));
+
+            Object value = npk.get(key);
+            if (value instanceof String) {
+                clause.append(" = ");
+            } else {
+                clause.append(" == ");
+            }
+            clause.append(marshall(params, value));
             first = false;
         }
 
@@ -509,6 +533,13 @@ public class StatementBuilder {
 
         return new Statement(builder.toString(), params);
 
+    }
+
+    public static Statement prepareDeleteAllRows(TableSchema table) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("DELETE FROM ");
+        builder.append(table.name);
+        return new Statement(builder.toString());
     }
 
     /**

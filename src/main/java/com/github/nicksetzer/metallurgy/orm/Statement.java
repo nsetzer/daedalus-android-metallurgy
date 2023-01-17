@@ -14,4 +14,18 @@ public class Statement {
         this.text = text;
         this.params = params;
     }
+
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(this.text);
+        builder.append(" | params (");
+        for (String param : this.params) {
+            builder.append(param);
+            builder.append(", ");
+        }
+        builder.append(")");
+
+
+        return builder.toString();
+    }
 }
