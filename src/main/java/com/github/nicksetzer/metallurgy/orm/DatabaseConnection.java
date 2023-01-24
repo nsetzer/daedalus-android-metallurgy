@@ -195,7 +195,13 @@ public class DatabaseConnection {
             m_db.setTransactionSuccessful();
         }
         m_db.endTransaction();
+
+
         //android.util.Log.d("daedalus-js", "transaction closed. success: " + success);
+    }
+
+    public Boolean isClosed() {
+        return !m_db.isOpen();
     }
 
 }

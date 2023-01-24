@@ -4,7 +4,11 @@ package com.github.nicksetzer.metallurgy.orm;
  * cd /data/data/com.github.nicksetzer.daedalus
  * cd /storage/emulated/0/Android/data/com.github.nicksetzer.daedalus/files/app-v1.sqlite
  *
- * adb pull /storage/emulated/0/Android/data/com.github.nicksetzer.daedalus/files/app-v1.sqlite .
+ * as of 2023 this no longer works unless the device is rooted
+ *      adb pull /storage/emulated/0/Android/data/com.github.nicksetzer.daedalus/files/app-v1.sqlite .
+ * instead
+ *      adb root
+ *      adb shell run-as com.github.nicksetzer.daedalus ls /data/data/com.github.nicksetzer.daedalus/files
  */
 
 import org.json.JSONArray;
